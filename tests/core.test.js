@@ -53,7 +53,7 @@ function fixture() {
     if (sql.startsWith('SELECT id,name,email,role FROM users WHERE id=')) return users.filter(u => u.id === values[0]).map(({ password_hash, ...u }) => u);
     if (sql.startsWith('SELECT * FROM users WHERE email=')) return users.filter(u => u.email === values[0]);
     if (sql.startsWith('INSERT INTO users')) {
-      if (users.some(u => u.email === values[1])) throw Object.assign(new Error('Duplicate'), { code: 'ER_DUP_ENTRY' });
+      if (users.some(u => u.email === values[1])) throw Object.assign(new Error('Duplicate'), { code: '23505' });
       users.push({ id: ++sequence, name: values[0], email: values[1], password_hash: values[2], role: values[3] });
       return { insertId: sequence };
     }
@@ -84,7 +84,7 @@ test('API protects workspace and mutations, registers editors, rotates session a
   assert.equal((await agent.post('/api/posts').set('X-CSRF-Token', originalCsrf).send({ body: 'Idea' })).status, 403);
   const csrf = registered.body.csrf;
   assert.equal((await agent.post('/api/posts').set('X-CSRF-Token', csrf).send({ body: 'Idea' })).status, 201);
-  assert.equal(posts[0].values[5], 'draft');
+  assert.equal(posts[0].values[6], 'draft');
   assert.equal((await agent.post('/api/posts').set('X-CSRF-Token', csrf).send({ body: 'Now', publish_now: true })).status, 400);
   assert.equal((await agent.post('/api/auth/logout').set('X-CSRF-Token', csrf).send({})).status, 200);
   assert.equal((await agent.get('/api/session')).body.user, null);
@@ -96,14 +96,14 @@ test('API protects workspace and mutations, registers editors, rotates session a
 
 test('worker excludes draft posts and records successful and failed deliveries', async () => {
   const calls = [];
-  const targets = [{ id: 10, post_id: 1, provider: 'facebook', config: '{}', status: 'pending' }, { id: 11, post_id: 1, provider: 'twitter', config: '{}', status: 'pending' }];
-  const post = { id: 1, status: 'scheduled', body: 'Hello', scheduled_at: '2026-10-01 10:00:00' };
+  const targets = [{ id: 10, post_id: 1, provider: 'facebook', config: '{}', status: 'pending', account_user_id: 1, is_active: true }, { id: 11, post_id: 1, provider: 'twitter', config: '{}', status: 'pending', account_user_id: 1, is_active: true }];
+  const post = { id: 1, author_id: 1, status: 'scheduled', body: 'Hello', scheduled_at: '2026-10-01 10:00:00' };
   let excludedDrafts = false;
   const conn = {
     beginTransaction: async () => {}, commit: async () => {}, rollback: async () => {}, release: () => {},
     query: async sql => {
-      if (sql.includes('GET_LOCK')) return [[{ acquired: 1 }]];
-      if (sql.includes('RELEASE_LOCK')) return [[{ released: 1 }]];
+      if (sql.includes('pg_try_advisory_lock')) return [[{ acquired: 1 }]];
+      if (sql.includes('pg_advisory_unlock')) return [[{ released: 1 }]];
       excludedDrafts = sql.includes("p.status='scheduled'") && sql.includes('p.scheduled_at IS NOT NULL');
       return [targets.map(t => ({ id: t.id, post_id: t.post_id }))];
     },

@@ -52,7 +52,8 @@ export async function completeOAuth(provider, code, verifier) {
   if (!token.access_token) throw new Error('Provider did not return an access token.');
   const config = { access_token: token.access_token, refresh_token: token.refresh_token || null, expires_at: token.expires_in ? Date.now() + token.expires_in * 1000 : null };
   if (provider === 'facebook' || provider === 'instagram') {
-    const { data: pages } = await remote(`${graph()}/me/accounts?fields=id,name,access_token,instagram_business_account`, { token: token.access_token });
+    const fields = provider === 'instagram' ? 'id,name,access_token,instagram_business_account' : 'id,name,access_token';
+    const { data: pages } = await remote(`${graph()}/me/accounts?fields=${fields}`, { token: token.access_token });
     const accounts = (pages.data || []).filter(p => provider === 'facebook' || p.instagram_business_account).map(p => ({
       name: p.name, config: { ...config, page_id: p.id, page_access_token: p.access_token, instagram_business_id: p.instagram_business_account?.id },
     }));

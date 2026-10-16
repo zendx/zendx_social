@@ -250,7 +250,7 @@ export function createApp({ db, pool, sessionStore, sessionSecret, sendMail = se
   });
   app.use('/api', (req, res) => res.status(404).json({ error: 'API route not found.' }));
   app.use('/uploads', express.static(path.join(root, 'uploads'), { dotfiles: 'deny', setHeaders: res => res.set('Content-Security-Policy', "default-src 'none'") }));
-  if (production) {
+  if (production && !process.env.VERCEL) {
     app.use(express.static(path.join(root, 'dist')));
     app.get('/{*path}', (req, res) => res.sendFile(path.join(root, 'dist', 'index.html')));
   }

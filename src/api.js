@@ -12,7 +12,8 @@ export async function api(path, options = {}) {
     result = JSON.parse(text);
     if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('Invalid API response');
   } catch {
-    const error = new Error('The sign-in service returned an invalid response. Make sure the Node API is running and /api requests are routed to it. For local development, run npm run dev and open http://localhost:5173.');
+    const local = ['localhost', '127.0.0.1'].includes(globalThis.location?.hostname);
+    const error = new Error(`The API returned an invalid response. ${local ? 'Run npm run dev and open http://localhost:5173.' : 'Check that the Node API is deployed and /api requests are routed to it.'}`);
     error.status = response.status;
     throw error;
   }

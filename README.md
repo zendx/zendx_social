@@ -96,6 +96,25 @@ Expired accounts require reconnection. Refresh tokens are retained but automatic
 
 ## Checks and production
 
+### Vercel deployment
+
+The repository includes `vercel.json` and `api/index.js`: Vite builds the frontend, and `/api/*` runs the Express app as a Node function. Other page URLs fall back to the frontend. Deploy the repository root, not just `dist`.
+
+In Vercel Project Settings > Environment Variables, set these for the deployment environment you use, then redeploy:
+
+- `DATABASE_URL`: your Supabase Session pooler connection string on port 5432.
+- `SESSION_SECRET`: a stable random secret of at least 32 characters, not the example value.
+- `APP_URL`: your deployed HTTPS origin, for example `https://your-app.vercel.app`.
+- `DB_SSL`: `true`.
+- `APP_TIMEZONE`: `Africa/Lagos` (optional; this is the default).
+- Provider and SMTP credentials when those features are enabled.
+
+Do not copy a Windows `DB_SSL_CA_FILE` path into Vercel. Leave that variable unset there: the function uses the bundled `database/prod-ca-2021.crt`. Local `.env` files are not deployed. Run `npm run db:setup` locally against the target database if its schema has not been initialized.
+
+After deployment, open `/api/health` and confirm it returns JSON with `status: "ok"`; `/api/session` should return JSON too. If initialization fails, the function returns a JSON 503 with a reference you can locate in Vercel runtime logs. Update social provider callback URLs to use the deployed origin.
+
+Vercel does not provide persistent local upload storage or a continuously running publishing worker. File uploads still require migration to object storage before use on Vercel; run the existing worker on a separate persistent host or scheduler. Sign-in and database-backed workspace features use the deployed API.
+
 ```sh
 npm test
 npm run test:db

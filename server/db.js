@@ -19,7 +19,7 @@ export function postgresOptions(config = database) {
   return {
     connectionString: url.toString(), max: config.max,
     connectionTimeoutMillis: config.connectionTimeoutMillis, idleTimeoutMillis: config.idleTimeoutMillis,
-    ssl: local && process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: true, ...(process.env.DB_SSL_CA_FILE ? { ca: readFileSync(process.env.DB_SSL_CA_FILE, 'utf8') } : {}) },
+    ssl: local && process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: true, ...((process.env.DB_SSL_CA_FILE || process.env.VERCEL) ? { ca: readFileSync(process.env.DB_SSL_CA_FILE || new URL('../database/prod-ca-2021.crt', import.meta.url), 'utf8') } : {}) },
   };
 }
 export function createDatabase(config = database) {

@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k \"node --watch server/index.js\" \"vite --host 127.0.0.1\"",
-    "build": "vite build",
-    "start": "node server/index.js",
+    "dev": "node api.js && concurrently -k \"node --watch server/index.js\" \"vite --host 127.0.0.1\"",
+    "build": "node api.js && vite build",
+    "start": "node api.js && node server/index.js",
     "db:setup": "node server/setup.js",
     "db:check": "node server/check-db.js",
     "worker": "node server/worker.js",
@@ -16,7 +16,7 @@
     "test:db": "node tests/database-integration.js"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": "24.x"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
